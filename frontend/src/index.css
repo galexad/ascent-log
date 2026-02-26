@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-mint-50: #effaf5;
+  --color-mint-100: #d7f2e3;
+  --color-mint-200: #b1e5cd;
+  --color-mint-300: #7fd2b1;
+  --color-mint-400: #4db991;
+  --color-mint-500: #2a9d76;
+  --color-mint-600: #1e7d5f;
+  --color-mint-700: #19644d;
+  --color-mint-800: #16503f;
+  --color-mint-900: #134234;
+  --color-mint-950: #0a261e;
+}
+
+@layer base {
+  :root {
+    --background: #ffffff;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --border: #e2e8f0;
+    --muted: #f1f5f9;
+    --muted-foreground: #64748b;
+  }
+
+  .dark {
+    --background: #0f172a;
+    --foreground: #f8fafc;
+    --card: #1e293b;
+    --card-foreground: #f8fafc;
+    --border: #334155;
+    --muted: #334155;
+    --muted-foreground: #94a3b8;
+  }
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+}
