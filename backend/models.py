@@ -5,8 +5,10 @@ from sqlmodel import Field, SQLModel
 
 class User(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    username: str
+    email: str = Field(unique=True, index=True)
+    name: str
     password: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class Application(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -18,4 +20,5 @@ class Application(SQLModel, table=True):
     location: Optional[str] = None
     url: Optional[str] = None
     user_id: Optional[uuid.UUID] = Field(default=None)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 

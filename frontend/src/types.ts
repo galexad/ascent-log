@@ -1,7 +1,7 @@
 export type ApplicationStatus = 'Applied' | 'In Progress' | 'Archived';
 
 export interface User {
-    id: number;
+    id: string;
     email: string;
     name: string;
 }
