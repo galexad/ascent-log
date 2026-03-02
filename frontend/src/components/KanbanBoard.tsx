@@ -38,7 +38,7 @@ export function KanbanBoard() {
     });
 
     const updateStatusMutation = useMutation({
-        mutationFn: async ({ id, status }: { id: number; status: ApplicationStatus }) => {
+        mutationFn: async ({ id, status }: { id: string; status: ApplicationStatus }) => {
             const app = applications?.find((a) => a.id === id);
             if (!app) return;
             const res = await fetch(`/api/applications/${id}`, {
@@ -75,7 +75,7 @@ export function KanbanBoard() {
 
         if (!over) return;
 
-        const applicationId = Number(active.id);
+        const applicationId = String(active.id);
         const newStatus = over.id as ApplicationStatus;
 
         const app = applications?.find(a => a.id === applicationId);
