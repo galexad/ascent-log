@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Plus, Loader2 } from 'lucide-react';
 import type { Application, ApplicationStatus } from '../types';
 import { KanbanColumn } from './KanbanColumn';
 import { ApplicationModal } from './ApplicationModal';
-import { DndContext, closestCorners, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import type { DragEndEvent } from '@dnd-kit/core';
+import { DndContext, type DragEndEvent, closestCorners, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 
 const fetchApplications = async (): Promise<Application[]> => {
     const res = await fetch('/api/applications');
@@ -32,7 +32,7 @@ export function KanbanBoard() {
         })
     );
 
-    const { data: applications, isError, error } = useQuery({
+    const { data: applications, isLoading, isError, error } = useQuery({
         queryKey: ['applications'],
         queryFn: fetchApplications,
     });
@@ -75,7 +75,7 @@ export function KanbanBoard() {
 
         if (!over) return;
 
-        const applicationId = String(active.id);
+        const applicationId = active.id as string;
         const newStatus = over.id as ApplicationStatus;
 
         const app = applications?.find(a => a.id === applicationId);
@@ -94,6 +94,13 @@ export function KanbanBoard() {
         setEditingApp(null);
     };
 
+    if (isLoading) {
+        return (
+            <div className="flex h-full items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-mint-500" />
+            </div>
+        );
+    }
 
     if (isError) {
         return (
@@ -126,6 +133,7 @@ export function KanbanBoard() {
                     onClick={() => setIsModalOpen(true)}
                     className="inline-flex items-center justify-center rounded-xl bg-mint-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-mint-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-500 transition-colors"
                 >
+                    <Plus className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
                     New Application
                 </button>
             </div>
