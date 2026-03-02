@@ -2,11 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from models import User
 from database import get_session
+from typing import List
+import uuid
 
 router = APIRouter()
 
 
-@router.get("/api/users", response_model=List(User))
+@router.get("/api/users", response_model=List[User])
 async def get_users(session: Session = Depends(get_session)):
     users = session.exec(select(User)).all()
     return users
