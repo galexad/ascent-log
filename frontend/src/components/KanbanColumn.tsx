@@ -8,7 +8,7 @@ interface KanbanColumnProps {
     status: ApplicationStatus;
     applications: Application[];
     onEdit: (app: Application) => void;
-    onStatusChange: (id: number, status: ApplicationStatus) => void;
+    onStatusChange: (id: string, status: ApplicationStatus) => void;
 }
 
 export function KanbanColumn({ title, status, applications, onEdit, onStatusChange }: KanbanColumnProps) {

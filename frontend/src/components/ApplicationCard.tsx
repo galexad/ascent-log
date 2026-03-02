@@ -30,7 +30,7 @@ export function ApplicationCard({ application, onEdit, onStatusChange }: Applica
     };
 
     const deleteMutation = useMutation({
-        mutationFn: async (id: number) => {
+        mutationFn: async (id: string) => {
             const res = await fetch(`/api/applications/${id}`, { method: 'DELETE' });
             if (!res.ok) throw new Error('Failed to delete');
         },

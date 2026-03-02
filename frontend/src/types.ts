@@ -7,8 +7,8 @@ export interface User {
 }
 
 export interface Application {
-    id: number;
-    user_id: number;
+    id: string;
+    user_id: string;
     company: string;
     position: string;
     description: string;
