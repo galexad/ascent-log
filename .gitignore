@@ -17,3 +17,13 @@ build/
 
 # Vite cache
 .vite/
+
+# Python virtual environment
+.venv/
+venv/
+ENV/
+env/
+dist/
+build/
+*.pyc
+__pycache__/
