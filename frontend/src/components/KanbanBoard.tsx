@@ -1,31 +1,19 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { Plus, Loader2 } from 'lucide-react';
 import type { Application, ApplicationStatus } from '../types';
 import { KanbanColumn } from './KanbanColumn';
 import { ApplicationModal } from './ApplicationModal';
 import { DndContext, type DragEndEvent, closestCorners, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useAuth } from '../context/AuthContext';
-
-
-const fetchApplications = async (userId: string | undefined): Promise<Application[]> => {
-    if (!userId) return [];
-    const res = await fetch(`/api/users/${userId}/applications`);
-    if (res.status === 401) {
-        throw new Error('Unauthorized');
-    }
-    if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        console.error('Fetch applications error:', errorData);
-        throw new Error(errorData.details || errorData.error || 'Failed to fetch applications');
-    }
-    return res.json();
-};
+import { useApplications } from '../hooks/useApplications';
 
 export function KanbanBoard() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingApp, setEditingApp] = useState<Application | null>(null);
+    const { applications, isLoading, isError, error, updateStatus } = useApplications();
     const queryClient = useQueryClient();
+    const { user } = useAuth();
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -35,58 +23,16 @@ export function KanbanBoard() {
         })
     );
 
-    const { user } = useAuth();
-    const { data: applications, isLoading, isError, error } = useQuery({
-        queryKey: ['applications', user?.id],
-        queryFn: () => fetchApplications(user?.id),
-        enabled: !!user?.id,
-    });
-
-    const updateStatusMutation = useMutation({
-        mutationFn: async ({ id, status }: { id: string; status: ApplicationStatus }) => {
-            const app = applications?.find((a) => a.id === id);
-            if (!app) return;
-            const res = await fetch(`/api/applications/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...app, status }),
-            });
-            if (!res.ok) throw new Error('Failed to update status');
-            return res.json();
-        },
-        onMutate: async ({ id, status }) => {
-            const queryKey = ['applications', user?.id];
-            await queryClient.cancelQueries({ queryKey });
-            const previousApps = queryClient.getQueryData<Application[]>(queryKey);
-
-            if (previousApps) {
-                queryClient.setQueryData<Application[]>(queryKey, (old) =>
-                    old?.map(app => app.id === id ? { ...app, status } : app)
-                );
-            }
-            return { previousApps };
-        },
-        onError: (_err, _newApp, context) => {
-            if (context?.previousApps) {
-                queryClient.setQueryData(['applications'], context.previousApps);
-            }
-        },
-        onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: ['applications'] });
-        },
-    });
-
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
-
         if (!over) return;
 
         const applicationId = active.id as string;
         const newStatus = over.id as ApplicationStatus;
 
-        const app = applications?.find(a => a.id === applicationId);
+        const app = applications?.find((a: Application) => a.id === applicationId);
         if (app && app.status !== newStatus) {
-            updateStatusMutation.mutate({ id: applicationId, status: newStatus });
+            updateStatus({ id: applicationId, status: newStatus, app });
         }
     };
 
@@ -113,7 +59,7 @@ export function KanbanBoard() {
             <div className="flex h-full flex-col items-center justify-center text-red-500 gap-4">
                 <p>Error loading applications: {error instanceof Error ? error.message : 'Unknown error'}</p>
                 <button
-                    onClick={() => queryClient.invalidateQueries({ queryKey: ['applications'] })}
+                    onClick={() => queryClient.invalidateQueries({ queryKey: ['applications', user?.id] })}
                     className="rounded-xl bg-mint-500 px-4 py-2 text-sm font-semibold text-white hover:bg-mint-600"
                 >
                     Retry
@@ -151,9 +97,12 @@ export function KanbanBoard() {
                             key={col.status}
                             title={col.title}
                             status={col.status}
-                            applications={applications?.filter((app) => app.status === col.status) || []}
+                            applications={applications?.filter((app: Application) => app.status === col.status) || []}
                             onEdit={handleEdit}
-                            onStatusChange={(id, newStatus) => updateStatusMutation.mutate({ id, status: newStatus })}
+                            onStatusChange={(id, newStatus) => {
+                                const app = applications?.find((a: Application) => a.id === id);
+                                if (app) updateStatus({ id, status: newStatus, app });
+                            }}
                         />
                     ))}
                 </div>

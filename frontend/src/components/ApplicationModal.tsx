@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { X, Loader2 } from 'lucide-react';
 import type { Application, ApplicationStatus } from "../types"
-import { useAuth } from '../context/AuthContext';
+import { useApplications } from '../hooks/useApplications';
 
 interface ApplicationModalProps {
     isOpen: boolean;
@@ -11,13 +10,12 @@ interface ApplicationModalProps {
 }
 
 export function ApplicationModal({ isOpen, onClose, application }: ApplicationModalProps) {
-    const queryClient = useQueryClient();
-    const { user } = useAuth();
+    const { saveApplication, isSaving } = useApplications();
     const [formData, setFormData] = useState({
         company: application?.company || '',
         position: application?.position || '',
         description: application?.description || '',
-        status: application?.status || 'Applied',
+        status: (application?.status || 'Applied') as ApplicationStatus,
         feedback: application?.feedback || '',
     });
 
@@ -41,33 +39,16 @@ export function ApplicationModal({ isOpen, onClose, application }: ApplicationMo
         }
     }, [application]);
 
-    const mutation = useMutation({
-        mutationFn: async (data: typeof formData) => {
-            const url = application ? `/api/applications/${application.id}` : '/api/applications';
-            const method = application ? 'PUT' : 'POST';
-
-            // Add user_id when creating a new application
-            const payload = application ? data : { ...data, user_id: user?.id };
-
-            const res = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            });
-            if (!res.ok) throw new Error('Failed to save application');
-            return res.json();
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['applications', user?.id] });
-            onClose();
-        },
-    });
-
     if (!isOpen) return null;
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        mutation.mutate(formData);
+        try {
+            await saveApplication({ id: application?.id, data: formData });
+            onClose();
+        } catch (err) {
+            console.error(err);
+        }
     };
 
     return (
@@ -77,7 +58,7 @@ export function ApplicationModal({ isOpen, onClose, application }: ApplicationMo
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white" >
                         {application ? 'Edit Application' : 'New Application'}
                     </h2>
-                    < button
+                    <button
                         onClick={onClose}
                         className="rounded-full p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                     >
@@ -85,13 +66,13 @@ export function ApplicationModal({ isOpen, onClose, application }: ApplicationMo
                     </button>
                 </div>
 
-                < form onSubmit={handleSubmit} className="space-y-5" >
+                <form onSubmit={handleSubmit} className="space-y-5" >
                     <div className="grid grid-cols-2 gap-4" >
                         <div>
                             <label htmlFor="company" className="block text-sm font-medium text-gray-700 dark:text-gray-300" >
                                 Company
                             </label>
-                            < input
+                            <input
                                 type="text"
                                 id="company"
                                 required
@@ -101,11 +82,11 @@ export function ApplicationModal({ isOpen, onClose, application }: ApplicationMo
                                 className="mt-1 block w-full rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-gray-900 dark:text-white shadow-sm focus:border-mint-500 focus:outline-none focus:ring-1 focus:ring-mint-500 sm:text-sm"
                             />
                         </div>
-                        < div >
+                        <div >
                             <label htmlFor="position" className="block text-sm font-medium text-gray-700 dark:text-gray-300" >
                                 Position
                             </label>
-                            < input
+                            <input
                                 type="text"
                                 id="position"
                                 required
@@ -116,27 +97,27 @@ export function ApplicationModal({ isOpen, onClose, application }: ApplicationMo
                         </div>
                     </div>
 
-                    < div >
+                    <div >
                         <label htmlFor="status" className="block text-sm font-medium text-gray-700 dark:text-gray-300" >
                             Status
                         </label>
-                        < select
+                        <select
                             id="status"
                             value={formData.status}
                             onChange={(e) => setFormData({ ...formData, status: e.target.value as ApplicationStatus })}
                             className="mt-1 block w-full rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-gray-900 dark:text-white shadow-sm focus:border-mint-500 focus:outline-none focus:ring-1 focus:ring-mint-500 sm:text-sm"
                         >
                             <option value="Applied" > Applied </option>
-                            < option value="In Progress" > In Progress </option>
-                            < option value="Archived" > Archived </option>
+                            <option value="In Progress" > In Progress </option>
+                            <option value="Archived" > Archived </option>
                         </select>
                     </div>
 
-                    < div >
+                    <div >
                         <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300" >
                             Job Description / Notes
                         </label>
-                        < textarea
+                        <textarea
                             id="description"
                             rows={3}
                             value={formData.description}
@@ -151,7 +132,7 @@ export function ApplicationModal({ isOpen, onClose, application }: ApplicationMo
                                 <label htmlFor="feedback" className="block text-sm font-medium text-gray-700 dark:text-gray-300" >
                                     Feedback / Next Steps
                                 </label>
-                                < textarea
+                                <textarea
                                     id="feedback"
                                     rows={2}
                                     value={formData.feedback}
@@ -170,12 +151,19 @@ export function ApplicationModal({ isOpen, onClose, application }: ApplicationMo
                         >
                             Cancel
                         </button>
-                        < button
+                        <button
                             type="submit"
-                            disabled={mutation.isPending}
-                            className="inline-flex justify-center rounded-xl border border-transparent bg-mint-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-mint-600 focus:outline-none focus:ring-2 focus:ring-mint-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 disabled:opacity-50"
+                            disabled={isSaving}
+                            className="inline-flex justify-center items-center gap-2 rounded-xl border border-transparent bg-mint-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-mint-600 focus:outline-none focus:ring-2 focus:ring-mint-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 disabled:opacity-50 min-w-[140px]"
                         >
-                            {mutation.isPending ? 'Saving...' : 'Save Application'}
+                            {isSaving ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    Saving...
+                                </>
+                            ) : (
+                                'Save Application'
+                            )}
                         </button>
                     </div>
                 </form>
