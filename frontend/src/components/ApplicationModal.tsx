@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Application, ApplicationStatus } from "../types"
+import { useAuth } from '../context/AuthContext';
 
 interface ApplicationModalProps {
     isOpen: boolean;
@@ -11,6 +12,7 @@ interface ApplicationModalProps {
 
 export function ApplicationModal({ isOpen, onClose, application }: ApplicationModalProps) {
     const queryClient = useQueryClient();
+    const { user } = useAuth();
     const [formData, setFormData] = useState({
         company: application?.company || '',
         position: application?.position || '',
@@ -43,16 +45,20 @@ export function ApplicationModal({ isOpen, onClose, application }: ApplicationMo
         mutationFn: async (data: typeof formData) => {
             const url = application ? `/api/applications/${application.id}` : '/api/applications';
             const method = application ? 'PUT' : 'POST';
+
+            // Add user_id when creating a new application
+            const payload = application ? data : { ...data, user_id: user?.id };
+
             const res = await fetch(url, {
                 method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data),
+                body: JSON.stringify(payload),
             });
             if (!res.ok) throw new Error('Failed to save application');
             return res.json();
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['applications'] });
+            queryClient.invalidateQueries({ queryKey: ['applications', user?.id] });
             onClose();
         },
     });

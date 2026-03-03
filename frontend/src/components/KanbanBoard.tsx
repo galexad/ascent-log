@@ -5,9 +5,12 @@ import type { Application, ApplicationStatus } from '../types';
 import { KanbanColumn } from './KanbanColumn';
 import { ApplicationModal } from './ApplicationModal';
 import { DndContext, type DragEndEvent, closestCorners, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { useAuth } from '../context/AuthContext';
 
-const fetchApplications = async (): Promise<Application[]> => {
-    const res = await fetch('/api/applications');
+
+const fetchApplications = async (userId: string | undefined): Promise<Application[]> => {
+    if (!userId) return [];
+    const res = await fetch(`/api/users/${userId}/applications`);
     if (res.status === 401) {
         throw new Error('Unauthorized');
     }
@@ -32,9 +35,11 @@ export function KanbanBoard() {
         })
     );
 
+    const { user } = useAuth();
     const { data: applications, isLoading, isError, error } = useQuery({
-        queryKey: ['applications'],
-        queryFn: fetchApplications,
+        queryKey: ['applications', user?.id],
+        queryFn: () => fetchApplications(user?.id),
+        enabled: !!user?.id,
     });
 
     const updateStatusMutation = useMutation({
@@ -50,11 +55,12 @@ export function KanbanBoard() {
             return res.json();
         },
         onMutate: async ({ id, status }) => {
-            await queryClient.cancelQueries({ queryKey: ['applications'] });
-            const previousApps = queryClient.getQueryData<Application[]>(['applications']);
+            const queryKey = ['applications', user?.id];
+            await queryClient.cancelQueries({ queryKey });
+            const previousApps = queryClient.getQueryData<Application[]>(queryKey);
 
             if (previousApps) {
-                queryClient.setQueryData<Application[]>(['applications'], (old) =>
+                queryClient.setQueryData<Application[]>(queryKey, (old) =>
                     old?.map(app => app.id === id ? { ...app, status } : app)
                 );
             }

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
-from models import User
+from models import User, Application
 from database import get_session
 from typing import List
 import uuid
@@ -19,6 +19,12 @@ async def get_user(user_id: uuid.UUID, session: Session = Depends(get_session)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
+@router.get("/api/users/{user_id}/applications", response_model=List[Application])
+async def get_user_applications(user_id: uuid.UUID, session: Session = Depends(get_session)):
+    statement = select(Application).where(Application.user_id == user_id)
+    applications = session.exec(statement).all()
+    return applications
 
 @router.post("/api/users", response_model=User)
 async def create_user(user: User, session: Session = Depends(get_session)):
