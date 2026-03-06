@@ -1,0 +1,22 @@
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+bin/
+lib/
+include/
+.venv/
+venv/
+ENV/
+.env
+.git
+.gitignore
+Dockerfile
+docker-compose.yml
+poetry.lock
+pyproject.toml
+# Except for the ones we need
+!poetry.lock
+!pyproject.toml
