@@ -1,11 +1,11 @@
 [project]
-name = "ascent-log-backend"
+name = "ascent-log-api"
 version = "0.1.0"
 description = ""
 authors = [
-    {name = "galexad",email = "gabrielaalexandruu@gmail.com"}
+    {name = "galexad", email = "gabrielaalexandruu@gmail.com"}
 ]
-requires-python = ">=3.14"
+requires-python = ">=3.12"
 dependencies = [
     "fastapi (>=0.135.1,<0.136.0)",
     "uvicorn (>=0.41.0,<0.42.0)",
@@ -20,6 +20,9 @@ dependencies = [
     "python-multipart (>=0.0.22,<0.0.23)",
     "argon2-cffi (>=25.1.0,<26.0.0)"
 ]
+
+[tool.poetry]
+package-mode = false
 
 
 
